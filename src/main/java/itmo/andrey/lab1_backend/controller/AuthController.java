@@ -1,10 +1,7 @@
 package itmo.andrey.lab1_backend.controller;
 
-import itmo.andrey.lab1_backend.domain.SignUpRequest;
-import itmo.andrey.lab1_backend.domain.dto.AdminRequestDTO;
 import itmo.andrey.lab1_backend.domain.dto.SignInDTO;
 import itmo.andrey.lab1_backend.domain.dto.SignUpDTO;
-import itmo.andrey.lab1_backend.domain.entitie.AdminRequest;
 import itmo.andrey.lab1_backend.domain.entitie.User;
 import itmo.andrey.lab1_backend.repository.AdminRequestRepository;
 import itmo.andrey.lab1_backend.repository.UserRepository;
@@ -14,8 +11,6 @@ import itmo.andrey.lab1_backend.util.JwtTokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:4200", allowedHeaders = "*")
@@ -56,33 +51,17 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> signupForm(@RequestBody SignUpRequest signUpRequest) {
-        SignUpDTO formData = signUpRequest.getFormData();
-        AdminRequestDTO adminRequestDTO = signUpRequest.getAdminRequestData();
-
+    public ResponseEntity<?> signupForm(@RequestBody SignUpDTO formData) {
         if (formData.getName() == null || formData.getName().isEmpty()) {
             return ResponseEntity.status(400).body("{\"error\":\"Имя пользователя не может быть пустым.\"}");
         }
-
-        List<User> allUsers = userRepository.findAll();
-        boolean isFirstAdmin = allUsers.stream().noneMatch(User::isAdmin);
 
         User newUser = new User(formData.getName(), formData.getPassword());
 
         if (userRepository.existsByName(newUser.getName())) {
             return ResponseEntity.status(409).body("{\"error\":\"Логин занят. Попробуйте другой.\"}");
         }
-
-        if (isFirstAdmin) {
-            newUser.setAdmin(true);
-        } else if (formData.isCandidateAdmin()) {
-            newUser.setAdmin(false);
-            AdminRequest newAdminRequest = new AdminRequest();
-            newAdminRequest.setUser(newUser);
-            newAdminRequest.setReason(adminRequestDTO.getReason());
-            adminRequestRepository.save(newAdminRequest);
-        }
-
+        newUser.setAdmin(false);
         userRepository.save(newUser);
         userCacheService.cacheUser(newUser);
 

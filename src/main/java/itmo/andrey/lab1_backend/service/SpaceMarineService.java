@@ -99,9 +99,6 @@ public class SpaceMarineService {
 
         String userName = userService.extractUsername(token);
         SpaceMarine spaceMarine = optionalSpaceMarine.get();
-//        System.out.println("Клиент: " + userName + "; права: " + userService.getUserRole(userName));
-//        System.out.println("Создатель объекта: " + spaceMarine.getUserName());
-//        System.out.println("-----------------");
         if (userService.getUserRole(userName).equals("user") && !spaceMarine.getUserName().equals(userName)) {
             throw new SecurityException("Нет прав на удаление этого объекта");
         }

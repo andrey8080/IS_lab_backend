@@ -32,7 +32,6 @@ public class SpaceMarineController {
     public ResponseEntity<?> add(@Valid @RequestBody SpaceMarineDTO formData, @RequestHeader("Authorization") String token) {
         boolean validToken = userService.checkValidToken(token);
 
-
         if (validToken) {
             try {
                 boolean added = spaceMarineService.add(formData, userService.extractUsername(token));
@@ -96,6 +95,7 @@ public class SpaceMarineController {
         try {
             boolean result = spaceMarineService.deleteSpaceMarine(id, token);
             if (result) {
+                sendUpdateMessage("delete");
                 return ResponseEntity.ok("{\"message\":\"SpaceMarine успешно удален\"}");
             } else {
                 return ResponseEntity.status(404).body("{\"error\":\"SpaceMarine не найден\"}");

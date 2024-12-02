@@ -5,5 +5,7 @@ import lombok.Data;
 @Data
 public class AdminRequestDTO {
     private String name;
+    private String password;
+    private boolean isAdmin;
     private String reason;
 }
