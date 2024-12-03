@@ -54,6 +54,6 @@ jobs:
                     script: |
                         docker pull andrey8080/is:back-lab1-latest
                         
-                        docker-compose -f root/itmooh/lab1-back/docker-compose.yml down || true
-                        sudo docker-compose -f root/itmooh/lab1-back/docker-compose.yml up --build -d
-                        docker-compose -f root/itmooh/lab1-back/docker-compose.yml ps
+                        docker-compose -f /root/itmooh/lab1-back/docker-compose.yml down || true
+                        sudo docker-compose -f /root/itmooh/lab1-back/docker-compose.yml up --build -d
+                        docker-compose -f /root/itmooh/lab1-back/docker-compose.yml ps

@@ -12,7 +12,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin(origins = "*", allowedHeaders = "*")
+@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:80"}, allowedHeaders = "*")
 @RequestMapping("/space-marine")
 public class SpaceMarineController {
 
