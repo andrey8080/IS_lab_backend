@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   app:
     image: andrey8080/is:back-lab1-latest
