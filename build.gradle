@@ -7,7 +7,6 @@ plugins {
 
 group = 'itmo.andrey'
 version = '1.0.0'
-sourceCompatibility = '17'
 
 repositories {
     mavenCentral()
@@ -40,5 +39,11 @@ dependencies {
 configurations {
     all {
         exclude group: 'org.hibernate'
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
