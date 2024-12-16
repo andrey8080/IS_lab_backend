@@ -13,22 +13,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-//@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:80, http://193.106.174.146/"}, allowedHeaders = "*")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequestMapping("/auth")
 public class AuthController {
     private final JwtTokenUtil jwtTokenUtil;
     private final UserRepository userRepository;
-    private final AdminRequestRepository adminRequestRepository;
     private final UserCacheService userCacheService;
     private final UserService userService;
 
     @Autowired
-    public AuthController(JwtTokenUtil jwtTokenUtil, UserRepository userRepository, AdminRequestRepository adminRequestRepository, UserService userService, UserCacheService userCacheService) {
+    public AuthController(JwtTokenUtil jwtTokenUtil, UserRepository userRepository, UserService userService, UserCacheService userCacheService) {
         this.jwtTokenUtil = jwtTokenUtil;
         this.userRepository = userRepository;
         this.userCacheService = userCacheService;
-        this.adminRequestRepository = adminRequestRepository;
         this.userService = userService;
     }
 
