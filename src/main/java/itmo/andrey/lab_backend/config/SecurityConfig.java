@@ -47,8 +47,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-//        config.setAllowedOrigins(List.of("*"));
-        config.setAllowedOriginPatterns(List.of("http://193.106.174.146", "andrey8080.tech"));
+        config.setAllowedOriginPatterns(List.of("http://andrey8080.tech", "http://andrey8080.tech:8088", "http://193.106.174.146"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
         config.setAllowCredentials(true);
