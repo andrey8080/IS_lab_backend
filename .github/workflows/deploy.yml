@@ -4,6 +4,7 @@ on:
     push:
         branches:
             - lab1
+            - lab2
 
 jobs:
     build_and_push:
@@ -26,10 +27,10 @@ jobs:
                 run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
             -   name: Build Docker image
-                run: docker build -t andrey8080/is:back-lab1-latest .
+                run: docker build -t andrey8080/is:back-lab-latest .
 
             -   name: Push Docker image to Docker Hub
-                run: docker push andrey8080/is:back-lab1-latest
+                run: docker push andrey8080/is:back-lab-latest
 
     deploy:
         runs-on: ubuntu-latest
@@ -47,8 +48,8 @@ jobs:
                     password: ${{ secrets.SERVER_PASSWORD }}
                     port: ${{ secrets.SERVER_PORT }}
                     script: |
-                        docker pull andrey8080/is:back-lab1-latest
+                        docker pull andrey8080/is:back-lab-latest
                         
-                        docker-compose -f /root/itmooh/lab1-back/docker-compose.yml down || true
-                        sudo docker-compose -f /root/itmooh/lab1-back/docker-compose.yml up --build -d
-                        docker-compose -f /root/itmooh/lab1-back/docker-compose.yml ps
+                        docker-compose -f /root/itmooh/lab-back/docker-compose.yml down || true
+                        sudo docker-compose -f /root/itmooh/lab-back/docker-compose.yml up --build -d
+                        docker-compose -f /root/itmooh/lab-back/docker-compose.yml ps
