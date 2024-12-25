@@ -2,32 +2,34 @@ version: '3.8'
 
 services:
     app:
-        image: andrey8080/is:back-lab1-latest
+        image: andrey8080/is:back-lab-latest
         ports:
             - "8088:8080"
         environment:
             HOST: db
-            JWT_SECRET: "7bb8bcfd6b1f3462367a7c51fdd4d056d2371a672d5e55405baca2687b3a28775b73ca516d6817a8edaa1907fede78ba567b80fef535632988314557ec073877c5d98dad562b3fe83e630e208719529a165d089c814c69fe9bde94112ce21014914137c9d4de64bf8c673f457a749935b74f4af5e3e4fd269066d880b35e93aaf7ed66fd0929edfc48f7ed628bdc5a112fcfd3aabb490ddfb733afcc4803b167c31a8eae45cba45c3d0a360f53f61a77e1b07a3b3a04556b4bcb0d1746c2fe58200820b39457d4a64ac5f418188cd31eaba675a570c79e98d1ed435236a711d332fc46988febf4dc8bcae4381491171186f1f1698d3f6b79c3eff89a9f70acb1"
-            SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lab_1_is
+            SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lab_is
             SPRING_DATASOURCE_USERNAME: admin
             SPRING_DATASOURCE_PASSWORD: admin_password
             SPRING_JPA_HIBERNATE_DDL_AUTO: update
+            VALKEY_HOST: 193.106.174.146
+            VALKEY_PORT: 6379
+            VALKEY_PASSWORD: 123#pass
         depends_on:
             - db
         networks:
-            - lab1-network
+            - lab-network
 
     db:
         image: postgres:15
         environment:
             POSTGRES_USER: admin
             POSTGRES_PASSWORD: admin_password
-            POSTGRES_DB: lab_1_is
+            POSTGRES_DB: lab_is
         ports:
             - "5433:5432"
         networks:
-            - lab1-network
+            - lab-network
 
 networks:
-    lab1-network:
+    lab-network:
         driver: bridge

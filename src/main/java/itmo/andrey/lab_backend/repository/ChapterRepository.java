@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ChapterRepository extends JpaRepository<Chapter, Long> {
     Chapter findById(long id);
+    Chapter findByName(String name);
+    boolean existsByName(String name);
 }

@@ -6,13 +6,17 @@ import itmo.andrey.lab_backend.domain.entitie.SpaceMarine;
 import itmo.andrey.lab_backend.repository.ChapterRepository;
 import itmo.andrey.lab_backend.repository.SpaceMarineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
-@Component
+@Service
 public class SpaceMarineService {
     private final SpaceMarineRepository spaceMarineRepository;
     private final ChapterRepository chapterRepository;
@@ -25,91 +29,60 @@ public class SpaceMarineService {
         this.userService = userService;
     }
 
-    public boolean add(SpaceMarineDTO formData, String userName) {
-        SpaceMarine spaceMarine = new SpaceMarine();
-        spaceMarine.setName(formData.getName());
-        spaceMarine.setCoordinates_x(formData.getCoordinates().getX());
-        spaceMarine.setCoordinates_y(formData.getCoordinates().getY());
-        spaceMarine.setCreationDate(String.valueOf(java.time.LocalDateTime.now()));
-        spaceMarine.setHealth(formData.getHealth());
-        spaceMarine.setHeight(formData.getHeight());
-        spaceMarine.setCategory(formData.getCategory());
-        spaceMarine.setWeaponType(formData.getWeaponType());
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public boolean addFromForm(SpaceMarineDTO formData, String userName) {
+        synchronized (this) {
+            if (userName == null || formData == null) return false;
 
-        if (userName != null) {
-            spaceMarine.setUserName(userName);
-        } else {
-            return false;
+            Chapter chapter = resolveOrCreateChapter(formData);
+            SpaceMarine spaceMarine = buildSpaceMarine(formData, chapter, userName);
+
+            spaceMarineRepository.save(spaceMarine);
+            return true;
         }
-        String idChapter = formData.getChapter().getId();
-        if (!Objects.equals(idChapter, "")) {
-            spaceMarine.setChapter(chapterRepository.findById(Long.parseLong(idChapter)));
-        } else {
-            Chapter newChapter = new Chapter(formData.getChapter().getName(), formData.getChapter().getMarinesCount(), formData.getChapter().getWorld());
-            chapterRepository.save(newChapter);
-            spaceMarine.setChapter(newChapter);
+    }
+
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public boolean addFromFile(List<SpaceMarineDTO> spaceMarineDTOList, String userName, LocalDateTime creationDate) {
+        if (spaceMarineDTOList == null || spaceMarineDTOList.isEmpty()) {
+            throw new IllegalArgumentException("Список SpaceMarineDTO пуст.");
         }
 
-        spaceMarineRepository.save(spaceMarine);
+        for (SpaceMarineDTO dto : spaceMarineDTOList) {
+            Chapter chapter = resolveOrCreateChapterFile(dto, creationDate);
+            SpaceMarine spaceMarine = buildSpaceMarine(dto, chapter, userName);
+            spaceMarineRepository.save(spaceMarine);
+        }
         return true;
     }
 
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public boolean updateSpaceMarine(Long id, SpaceMarineDTO formData, String token) {
-        Optional<SpaceMarine> optionalSpaceMarine = spaceMarineRepository.findById(id);
-        if (optionalSpaceMarine.isEmpty()) {
-            return false;
-        }
+        SpaceMarine spaceMarine = spaceMarineRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("SpaceMarine с ID " + id + " не найден."));
 
-        SpaceMarine spaceMarine = optionalSpaceMarine.get();
         String userName = userService.extractUsername(token);
-        if (userService.getUserRole(userName).equals("user") && !spaceMarine.getUserName().equals(userName)) {
-            throw new SecurityException("Нет прав на удаление этого объекта");
-        }
+        validateUserAccess(spaceMarine, userName);
 
-        if (formData.getName() == null || formData.getCategory() == null) {
-            throw new IllegalArgumentException("Обязательные поля отсутствуют");
-        }
+        updateSpaceMarineFields(spaceMarine, formData);
 
-        spaceMarine.setName(formData.getName());
-        spaceMarine.setCoordinates_x(formData.getCoordinates().getX());
-        spaceMarine.setCoordinates_y(formData.getCoordinates().getY());
-        spaceMarine.setHealth(formData.getHealth());
-        spaceMarine.setHeight(formData.getHeight());
-        spaceMarine.setCategory(formData.getCategory());
-        spaceMarine.setWeaponType(formData.getWeaponType());
-
-        String idChapter = formData.getChapter().getId();
-        if (!Objects.equals(idChapter, "")) {
-            spaceMarine.setChapter(chapterRepository.findById(Long.parseLong(idChapter)));
-        } else {
-            Chapter newChapter = new Chapter(formData.getChapter().getName(), formData.getChapter().getMarinesCount(), formData.getChapter().getWorld());
-            chapterRepository.save(newChapter);
-            spaceMarine.setChapter(newChapter);
-        }
+        Chapter chapter = resolveOrCreateChapter(formData);
+        spaceMarine.setChapter(chapter);
 
         spaceMarineRepository.save(spaceMarine);
         return true;
     }
 
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public boolean deleteSpaceMarine(Long id, String token) {
-        Optional<SpaceMarine> optionalSpaceMarine = spaceMarineRepository.findById(id);
-        if (optionalSpaceMarine.isEmpty()) {
-            return false;
-        }
+        SpaceMarine spaceMarine = spaceMarineRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("SpaceMarine с ID " + id + " не найден."));
 
         String userName = userService.extractUsername(token);
-        SpaceMarine spaceMarine = optionalSpaceMarine.get();
-        if (userService.getUserRole(userName).equals("user") && !spaceMarine.getUserName().equals(userName)) {
-            throw new SecurityException("Нет прав на удаление этого объекта");
-        }
+        validateUserAccess(spaceMarine, userName);
 
         spaceMarineRepository.delete(spaceMarine);
         return true;
-    }
-
-
-    public Object getSpaceMarineById(long id) {
-        return spaceMarineRepository.findById(id);
     }
 
     public List<SpaceMarine> getAllObjects() {
@@ -118,5 +91,97 @@ public class SpaceMarineService {
 
     public List<SpaceMarine> getUserObjects(String userName) {
         return spaceMarineRepository.findByUserName(userName);
+    }
+
+    public Optional<SpaceMarine> getSpaceMarineById(long id) {
+        return spaceMarineRepository.findById(id);
+    }
+
+    private Chapter resolveOrCreateChapter(SpaceMarineDTO formData) {
+        String chapterId = formData.getChapter().getId();
+        if (chapterId != null && !chapterId.isEmpty()) {
+            Chapter chapterFromId = chapterRepository.findById(Long.parseLong(chapterId));
+            if (chapterFromId != null) {
+                return chapterFromId;
+            }
+        }
+
+        String chapterName = formData.getChapter().getName();
+        Chapter chapterFromName = chapterRepository.findByName(chapterName);
+
+        if (chapterFromName != null) {
+            return chapterFromName;
+        } else {
+            Chapter chapter = createChapter(formData);
+            chapterRepository.save(chapter);
+            return chapter;
+        }
+    }
+
+    private Chapter resolveOrCreateChapterFile(SpaceMarineDTO formData, LocalDateTime creationDate) {
+        long chapterId = Long.parseLong(formData.getChapter().getId());
+        String chapterName = formData.getChapter().getName();
+        Chapter chapterFromId = chapterRepository.findById(chapterId);
+        Chapter chapterFromName = chapterRepository.findByName(chapterName);
+
+        if (chapterFromId != null) {
+            return chapterFromId;
+        } else if (chapterFromName != null) {
+            return chapterFromName;
+        } else {
+            Chapter chapter = createChapterWithTimestamp(formData, creationDate);
+            chapterRepository.save(chapter);
+            return chapter;
+        }
+    }
+
+
+    private Chapter createChapter(SpaceMarineDTO formData) {
+        Chapter chapter = new Chapter();
+        chapter.setName(formData.getChapter().getName());
+        chapter.setCount(formData.getChapter().getMarinesCount());
+        chapter.setWorld(formData.getChapter().getWorld());
+        chapterRepository.save(chapter);
+        return chapter;
+    }
+
+    private Chapter createChapterWithTimestamp(SpaceMarineDTO formData, LocalDateTime creationDate) {
+        String timestamp = creationDate.format(DateTimeFormatter.ofPattern("ddMMyyyy_HHmmss"));
+        Chapter chapter = new Chapter();
+        chapter.setName(formData.getChapter().getName() + "_" + timestamp);
+        chapter.setCount(formData.getChapter().getMarinesCount());
+        chapter.setWorld(formData.getChapter().getWorld());
+        return chapter;
+    }
+
+    private SpaceMarine buildSpaceMarine(SpaceMarineDTO formData, Chapter chapter, String userName) {
+        SpaceMarine spaceMarine = new SpaceMarine();
+        spaceMarine.setName(formData.getName());
+        spaceMarine.setCoordinates_x(formData.getCoordinates().getX());
+        spaceMarine.setCoordinates_y(formData.getCoordinates().getY());
+        spaceMarine.setCreationDate(LocalDateTime.now().toString());
+        spaceMarine.setHealth(formData.getHealth());
+        spaceMarine.setHeight(formData.getHeight());
+        spaceMarine.setCategory(formData.getCategory());
+        spaceMarine.setWeaponType(formData.getWeaponType());
+        spaceMarine.setUserName(userName);
+        spaceMarine.setChapter(chapter);
+        return spaceMarine;
+    }
+
+    private void updateSpaceMarineFields(SpaceMarine spaceMarine, SpaceMarineDTO formData) {
+        spaceMarine.setName(formData.getName());
+        spaceMarine.setCoordinates_x(formData.getCoordinates().getX());
+        spaceMarine.setCoordinates_y(formData.getCoordinates().getY());
+        spaceMarine.setHealth(formData.getHealth());
+        spaceMarine.setHeight(formData.getHeight());
+        spaceMarine.setCategory(formData.getCategory());
+        spaceMarine.setWeaponType(formData.getWeaponType());
+    }
+
+    private void validateUserAccess(SpaceMarine spaceMarine, String userName) {
+        if (!spaceMarine.getUserName().equals(userName) && userService.getUserRole(userName).equals("user")) {
+            throw new SecurityException("Нет прав для выполнения операции.");
+        }
     }
 }

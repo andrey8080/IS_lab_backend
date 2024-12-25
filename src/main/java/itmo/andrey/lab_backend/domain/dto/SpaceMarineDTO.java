@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
-import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -44,30 +43,3 @@ public class SpaceMarineDTO {
 	}
 }
 
-@Getter
-enum WeaponType {
-	HEAVY_BOLTGUN ("Тяжёлый болтовой пистолет"),
-	BOLT_PISTOL ("Болтовой пистолет"),
-	BOLT_RIFLE ("Болтовая винтовка"),
-	COMBI_FLAMER ("Комби огнемёт"),
-	GRAVY_GUN ("Гравипушка");
-
-	private final String type;
-	private WeaponType(String type) {
-		this.type = type;
-	}
-}
-
-@Getter
-enum AstartesCategory {
-	SCOUT ("Скаут"),
-	AGGRESSOR ("Агрессор"),
-	INCEPTOR ("Инцептор"),
-	SUPPRESSOR ("Супрессор"),
-	TERMINATOR ("Терминатор");
-
-	private final String category;
-	private AstartesCategory(String category) {
-		this.category = category;
-	}
-}

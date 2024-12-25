@@ -47,6 +47,10 @@ public class UserService {
         return userName;
     }
 
+    public User getUserByUsername(String username) {
+        return userRepository.findByName(username);
+    }
+
     public String getUserRole(String username) {
         if (username == null) {
             return null;

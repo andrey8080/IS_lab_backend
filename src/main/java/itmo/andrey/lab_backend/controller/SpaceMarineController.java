@@ -34,18 +34,18 @@ public class SpaceMarineController {
 
         if (validToken) {
             try {
-                boolean added = spaceMarineService.add(formData, userService.extractUsername(token));
+                boolean added = spaceMarineService.addFromForm(formData, userService.extractUsername(token));
                 if (added) {
                     sendUpdateMessage("add");
                     return ResponseEntity.ok().body("{\"message\":\"SpaceMarine успешно добавлен\"}");
                 } else {
-                    return ResponseEntity.status(400).body("{\"error\": \"Ошибка при добавлении SpaceMarine\"}");
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body("{\"error\": \"Ошибка при добавлении}");
                 }
-
-            } catch (DataIntegrityViolationException e) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("{\"error\":\"Орден с таким именем уже существует. Пожалуйста, выберите другое имя.\"}");
+            } catch (IllegalArgumentException ex) {
+                ex.printStackTrace();
+                return ResponseEntity.status(409).body("{\"error\":\"" + ex.getMessage() + "\"}");
             } catch (Exception e) {
-                return ResponseEntity.status(400).body("{\"error\":\"" + e.getMessage() + "\"}");
+                return ResponseEntity.status(400).body("{\"error\":\" Произошла неизвестная ошибка\"}");
             }
         } else {
             return ResponseEntity.status(401).body("{\"error\":\"Неверный или просроченный токен\"}");
@@ -78,8 +78,8 @@ public class SpaceMarineController {
             } else {
                 return ResponseEntity.status(404).body("{\"error\":\"SpaceMarine не найден\"}");
             }
-        } catch (DataIntegrityViolationException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("{\"error\":\"Орден с таким именем уже существует. Пожалуйста, выберите другое имя.\"}");
+        } catch (DataIntegrityViolationException ex) {
+            return ResponseEntity.status(409).body("{\"error\":\"" + ex.getMessage() + "\"}");
         } catch (Exception e) {
             return ResponseEntity.status(400).body("{\"error\":\"" + e.getMessage() + "\"}");
         }

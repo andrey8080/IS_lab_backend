@@ -22,7 +22,7 @@ public class HistoryImports {
     private String status;
 
     @Column(nullable = false)
-    private Long counter;
+    private int counter;
 
     public String getUsername() {
         return user.getName();

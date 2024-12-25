@@ -67,7 +67,6 @@ public class JwtTokenUtil {
 					.signWith(SignatureAlgorithm.RS256, privateKey)
 					.compact();
 		} catch (Exception e) {
-			e.printStackTrace();
 			return null;
 		}
 	}
@@ -79,7 +78,7 @@ public class JwtTokenUtil {
 					.parseClaimsJws(token);
 			return true;
 		} catch (MalformedJwtException | ExpiredJwtException | UnsupportedJwtException | IllegalArgumentException ex) {
-			ex.printStackTrace();
+
 		}
 		return false;
 	}
@@ -92,7 +91,6 @@ public class JwtTokenUtil {
 					.getBody()
 					.getSubject();
 		} catch (Exception e) {
-			e.printStackTrace();
 			return null;
 		}
 	}
