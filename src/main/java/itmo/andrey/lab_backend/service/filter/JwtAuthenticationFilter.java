@@ -32,7 +32,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				SecurityContextHolder.getContext().setAuthentication(
 						new UsernamePasswordAuthenticationToken(name, null, new ArrayList<>())
 				);
+				System.out.println("Valid token for user: " + name);
+			} else {
+				System.out.println("Invalid token");
 			}
+		} else {
+			System.out.println("Authorization header missing or doesn't start with Bearer");
 		}
 		filterChain.doFilter(request, response);
 	}

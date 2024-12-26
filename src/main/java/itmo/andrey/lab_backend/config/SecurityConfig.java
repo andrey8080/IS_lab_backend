@@ -2,6 +2,10 @@ package itmo.andrey.lab_backend.config;
 
 import itmo.andrey.lab_backend.service.filter.JwtAuthenticationFilter;
 import itmo.andrey.lab_backend.util.JwtTokenUtil;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,7 +19,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.IOException;
 import java.util.List;
 
 @Configuration
@@ -42,7 +48,17 @@ public class SecurityConfig {
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
+        http.addFilterBefore(new LoggingFilter(), UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
+    }
+
+    public static class LoggingFilter extends OncePerRequestFilter {
+        @Override
+        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+            System.out.println("Request URI: " + request.getRequestURI());
+            filterChain.doFilter(request, response);
+        }
     }
 
     @Bean

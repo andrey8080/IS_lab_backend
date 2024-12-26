@@ -3,7 +3,6 @@ package itmo.andrey.lab_backend.controller;
 import itmo.andrey.lab_backend.domain.dto.SpaceMarineDTO;
 import itmo.andrey.lab_backend.exception.custom.ChapterAlreadyExistsException;
 import itmo.andrey.lab_backend.service.FileService;
-import itmo.andrey.lab_backend.service.SpaceMarineService;
 import itmo.andrey.lab_backend.service.UserService;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @RestController
-@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequestMapping("/file")
 public class FileController {
     private final UserService userService;
