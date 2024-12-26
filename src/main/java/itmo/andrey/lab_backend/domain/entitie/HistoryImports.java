@@ -24,6 +24,12 @@ public class HistoryImports {
     @Column(nullable = false)
     private int counter;
 
+    @Column()
+    private String fileName;
+
+    @Column()
+    private String fileUrl;
+
     public String getUsername() {
         return user.getName();
     }

@@ -26,7 +26,7 @@ public class FileController {
     private final FileService fileService;
 
     @Autowired
-    public FileController(FileService fileService, UserService userService, SpaceMarineService spaceMarineService) {
+    public FileController(FileService fileService, UserService userService) {
         this.fileService = fileService;
         this.userService = userService;
     }

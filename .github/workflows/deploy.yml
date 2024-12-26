@@ -3,7 +3,7 @@ name: CI/CD lab
 on:
     push:
         branches:
-            - lab2
+            - lab3
 
 jobs:
     build_and_push:

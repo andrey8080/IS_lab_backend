@@ -21,11 +21,9 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
-    private final JwtTokenUtil jwtTokenUtil;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(JwtTokenUtil jwtTokenUtil, JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.jwtTokenUtil = jwtTokenUtil;
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
@@ -50,7 +48,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://193.106.174.146", "andrey8080.tech", "http://andrey8080.tech"));
+        config.setAllowedOriginPatterns(List.of("http://localhost:4200", "http://127.0.0.1:4200", "http://193.106.174.146", "andrey8080.tech", "http://andrey8080.tech"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
         config.setAllowCredentials(true);
