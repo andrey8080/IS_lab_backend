@@ -64,7 +64,7 @@ public class FileService {
         for (SpaceMarineDTO dto : spaceMarineDTOList) {
             String chapterName = dto.getChapter().getName();
             if (!processedChapters.add(chapterName)) {
-                saveFailureHistory(historyImport, "failure");
+                saveFailureHistory(historyImport, "Duplicate chapter detected: " + chapterName);
                 throw new ChapterAlreadyExistsException("Duplicate chapter detected: " + chapterName);
             }
         }
@@ -104,16 +104,15 @@ public class FileService {
         historyImportsRepository.save(historyImport);
     }
 
-    private List<HistoryImports> getHistoryFromDB(String userRole, String userName) {
-        return "admin".equals(userRole)
+    private List<HistoryImports> getHistoryFromDB(String userName) {
+        return userService.getUserRole(userName).equals("admin")
                 ? historyImportsRepository.findAll()
                 : historyImportsRepository.getAllByUser_Name(userName);
     }
 
     public List<Map<String, Object>> getHistory(String token) {
-        String userRole = userService.getUserRole(token);
         String username = userService.extractUsername(token);
-        List<HistoryImports> historyImportsList = getHistoryFromDB(userRole, username);
+        List<HistoryImports> historyImportsList = getHistoryFromDB(username);
 
         return historyImportsList.stream().map(historyImport -> {
             Map<String, Object> historyMap = new HashMap<>();

@@ -51,7 +51,6 @@ public class FileController {
                     return ResponseEntity.status(400).body("{\"error\":\"Invalid fileCreationDate format\"}");
                 }
             } else {
-                // Если дата не передана, используем текущую
                 creationDate = LocalDateTime.now();
             }
 

@@ -52,7 +52,7 @@ public class JwtTokenUtil {
 			jedis.auth(valkeyPassword);
 			String privateKeyString = jedis.get("privateKey");
 			if (privateKeyString == null) {
-				throw new IllegalStateException("Private key not found in Redis");
+				throw new IllegalStateException("Private key not found in valkey");
 			}
 			this.privateKey = keyService.convertStringToPrivateKey(privateKeyString);
 		}

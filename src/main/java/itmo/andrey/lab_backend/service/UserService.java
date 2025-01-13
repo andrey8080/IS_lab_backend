@@ -58,6 +58,8 @@ public class UserService {
 
         User user = userRepository.findByName(username);
         if (user != null && user.isAdmin()) {
+            System.out.println(user);
+            System.out.println(user.isAdmin());
             return "admin";
         }
         return "user";
