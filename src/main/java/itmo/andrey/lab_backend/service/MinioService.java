@@ -40,11 +40,23 @@ public class MinioService {
         }
     }
 
+    public boolean isMinioAvailable() {
+        try {
+            minioClient.listBuckets();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public void deleteFile(String fileName) {
         try {
-            minioClient.removeObject(RemoveObjectArgs.builder().bucket(bucketName).object(fileName).build());
+            minioClient.removeObject(RemoveObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(fileName)
+                    .build());
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка удаления файла из MinIO: " + e.getMessage(), e);
+            throw new RuntimeException("Ошибка удаления файла из MinIO", e);
         }
     }
 }

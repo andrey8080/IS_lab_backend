@@ -43,23 +43,16 @@ public class SpaceMarineService {
     }
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
-    public boolean addFromFile(List<SpaceMarineDTO> spaceMarineDTOList, String userName, LocalDateTime creationDate) {
-        if (spaceMarineDTOList == null || spaceMarineDTOList.isEmpty()) {
-            throw new IllegalArgumentException("Список SpaceMarineDTO пуст.");
-        }
-
-        for (SpaceMarineDTO dto : spaceMarineDTOList) {
-            Chapter chapter = resolveOrCreateChapterFile(dto, creationDate);
-            SpaceMarine spaceMarine = buildSpaceMarine(dto, chapter, userName);
-            spaceMarineRepository.save(spaceMarine);
-        }
-        return true;
+    public SpaceMarine addFromFile(SpaceMarineDTO dto, String userName, LocalDateTime creationDate) {
+        Chapter chapter = resolveOrCreateChapterFile(dto, creationDate);
+        SpaceMarine spaceMarine = buildSpaceMarine(dto, chapter, userName);
+        spaceMarineRepository.save(spaceMarine);
+        return spaceMarine;
     }
 
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public boolean updateSpaceMarine(Long id, SpaceMarineDTO formData, String token) {
-        SpaceMarine spaceMarine = spaceMarineRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("SpaceMarine с ID " + id + " не найден."));
+        SpaceMarine spaceMarine = spaceMarineRepository.findById(id).orElseThrow(() -> new NoSuchElementException("SpaceMarine с ID " + id + " не найден."));
 
         String userName = userService.extractUsername(token);
         validateUserAccess(spaceMarine, userName);
@@ -75,8 +68,7 @@ public class SpaceMarineService {
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public boolean deleteSpaceMarine(Long id, String token) {
-        SpaceMarine spaceMarine = spaceMarineRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("SpaceMarine с ID " + id + " не найден."));
+        SpaceMarine spaceMarine = spaceMarineRepository.findById(id).orElseThrow(() -> new NoSuchElementException("SpaceMarine с ID " + id + " не найден."));
 
         String userName = userService.extractUsername(token);
         validateUserAccess(spaceMarine, userName);

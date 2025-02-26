@@ -7,42 +7,55 @@ import itmo.andrey.lab_backend.domain.entitie.HistoryImports;
 import itmo.andrey.lab_backend.exception.custom.ChapterAlreadyExistsException;
 import itmo.andrey.lab_backend.exception.custom.FileParseException;
 import itmo.andrey.lab_backend.exception.custom.UserNotFoundException;
-import itmo.andrey.lab_backend.repository.HistoryImportsRepository;
+import itmo.andrey.lab_backend.repository.SpaceMarineRepository;
+import itmo.andrey.lab_backend.service.transaction.DatabaseTransactionParticipant;
+import itmo.andrey.lab_backend.service.transaction.MinioTransactionParticipant;
+import itmo.andrey.lab_backend.service.transaction.TransactionCoordinator;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Component
 public class FileService {
-    private final HistoryImportsRepository historyImportsRepository;
+    private final HistoryService historyService;
     private final SpaceMarineService spaceMarineService;
     private final UserService userService;
-    private final MinioService minioService;
+    private final MinioTransactionParticipant minioTransactionParticipant;
+    private final TransactionCoordinator transactionCoordinator;
+    private final SpaceMarineRepository spaceMarineRepository;
 
-    public FileService(HistoryImportsRepository historyImportsRepository, SpaceMarineService spaceMarineService, UserService userService, MinioService minioService) {
-        this.historyImportsRepository = historyImportsRepository;
+    public FileService(HistoryService historyService, SpaceMarineService spaceMarineService, UserService userService, MinioService minioService, MinioTransactionParticipant minioTransactionParticipant, TransactionCoordinator transactionCoordinator, SpaceMarineRepository spaceMarineRepository) {
+        this.historyService = historyService;
         this.spaceMarineService = spaceMarineService;
         this.userService = userService;
-        this.minioService = minioService;
+        this.minioTransactionParticipant = minioTransactionParticipant;
+        this.transactionCoordinator = transactionCoordinator;
+        this.spaceMarineRepository = spaceMarineRepository;
     }
 
     public List<SpaceMarineDTO> uploadFile(MultipartFile file, String userName, LocalDateTime creationDate) {
         ObjectMapper objectMapper = new ObjectMapper();
         HistoryImports historyImport = new HistoryImports();
-        historyImport.setUser(userService.getUserByUsername(userName));
+        var user = userService.getUserByUsername(userName);
+        if (user == null) {
+            historyService.saveFailureHistory(historyImport, "User not found");
+            throw new UserNotFoundException("User not found for username: " + userName);
+        }
+        historyImport.setUser(user);
 
         if (historyImport.getUser() == null) {
-            saveFailureHistory(historyImport, "User not found");
+            historyService.saveFailureHistory(historyImport, "User not found");
             throw new UserNotFoundException("User not found for username: " + userName);
         }
 
         if (file.isEmpty()) {
-            saveFailureHistory(historyImport, "Empty file uploaded");
+            historyService.saveFailureHistory(historyImport, "Empty file uploaded");
             throw new FileParseException("The uploaded file is empty.");
         }
 
@@ -51,12 +64,12 @@ public class FileService {
             spaceMarineDTOList = objectMapper.readValue(file.getInputStream(), new TypeReference<List<SpaceMarineDTO>>() {
             });
         } catch (IOException e) {
-            saveFailureHistory(historyImport, "File parsing failed: " + e.getMessage());
+            historyService.saveFailureHistory(historyImport, "File parsing failed: " + e.getMessage());
             throw new FileParseException("Failed to parse the file: " + e.getMessage());
         }
 
         if (spaceMarineDTOList.isEmpty()) {
-            saveFailureHistory(historyImport, "Parsed file is empty");
+            historyService.saveFailureHistory(historyImport, "Parsed file is empty");
             throw new FileParseException("The file is empty or corrupted.");
         }
 
@@ -64,65 +77,25 @@ public class FileService {
         for (SpaceMarineDTO dto : spaceMarineDTOList) {
             String chapterName = dto.getChapter().getName();
             if (!processedChapters.add(chapterName)) {
-                saveFailureHistory(historyImport, "Duplicate chapter detected: " + chapterName);
+                historyService.saveFailureHistory(historyImport, "Duplicate chapter detected: " + chapterName);
                 throw new ChapterAlreadyExistsException("Duplicate chapter detected: " + chapterName);
             }
         }
 
-        spaceMarineService.addFromFile(spaceMarineDTOList, userName, creationDate);
+        DatabaseTransactionParticipant dbParticipant = new DatabaseTransactionParticipant(spaceMarineService, spaceMarineRepository, spaceMarineDTOList, userName);
+        minioTransactionParticipant.setMultipartFile(file);
+        minioTransactionParticipant.setFileName(UUID.randomUUID() + "_" + file.getOriginalFilename());
 
-//        String fileName = file.getOriginalFilename() + "_" +  creationDate;
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        String fileUrl = saveToMinio(file, fileName);
-        saveSuccessHistory(historyImport, processedChapters.size(), fileName, fileUrl);
-        return spaceMarineDTOList;
-    }
+        transactionCoordinator.registerParticipant(dbParticipant);
+        transactionCoordinator.registerParticipant(minioTransactionParticipant);
 
-    @Transactional(rollbackFor = Exception.class)
-    protected String saveToMinio(MultipartFile file, String fileName) {
         try {
-            String fileUrl = minioService.uploadFile(fileName, file);
-            return fileUrl;
+            transactionCoordinator.executeTransaction(userName);
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка загрузки файла в MinIO: " + e.getMessage(), e);
+            historyService.saveFailureHistory(historyImport, "Transaction failed: " + e.getMessage());
+            throw new RuntimeException("Transaction failed: " + e.getMessage(), e);
         }
-    }
 
-    private void saveFailureHistory(HistoryImports historyImport, String status) {
-        historyImport.setCounter(0);
-        historyImport.setStatus("failure: " + status);
-        historyImport.setFileName("null");
-        historyImport.setFileUrl("#");
-        historyImportsRepository.save(historyImport);
-    }
-
-    private void saveSuccessHistory(HistoryImports historyImport, int counter, String fileName, String fileUrl) {
-        historyImport.setCounter(counter);
-        historyImport.setStatus("success");
-        historyImport.setFileName(fileName);
-        historyImport.setFileUrl(fileUrl);
-        historyImportsRepository.save(historyImport);
-    }
-
-    private List<HistoryImports> getHistoryFromDB(String userName) {
-        return userService.getUserRole(userName).equals("admin")
-                ? historyImportsRepository.findAll()
-                : historyImportsRepository.getAllByUser_Name(userName);
-    }
-
-    public List<Map<String, Object>> getHistory(String token) {
-        String username = userService.extractUsername(token);
-        List<HistoryImports> historyImportsList = getHistoryFromDB(username);
-
-        return historyImportsList.stream().map(historyImport -> {
-            Map<String, Object> historyMap = new HashMap<>();
-            historyMap.put("id", historyImport.getId());
-            historyMap.put("status", historyImport.getStatus());
-            historyMap.put("counter", historyImport.getCounter());
-            historyMap.put("username", historyImport.getUser().getName());
-            historyMap.put("fileName", historyImport.getFileName());
-            historyMap.put("fileUrl", historyImport.getFileUrl());
-            return historyMap;
-        }).collect(Collectors.toList());
+        return spaceMarineDTOList;
     }
 }

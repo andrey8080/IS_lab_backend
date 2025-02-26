@@ -10,10 +10,10 @@ import java.util.Base64;
 @Service
 public class KeyService {
 
-    public PrivateKey convertStringToPrivateKey(String key) throws Exception {
-        byte[] keyBytes = Base64.getDecoder().decode(key);
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+    public PrivateKey convertStringToPrivateKey(String privateKeyString) throws Exception {
+        byte[] decoded = Base64.getDecoder().decode(privateKeyString);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        return keyFactory.generatePrivate(spec);
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decoded);
+        return keyFactory.generatePrivate(keySpec);
     }
 }
